@@ -10,7 +10,7 @@ MongoClient.connect(uri, { useNewUrlParser: true }, (err, client) => {
     console.log("Connected to mongodb server mlab");
 
     const dbo = client.db("todoapp2");
-    // const myobj = { todo: "some todo", completed: true };
+    // const myobj = { text: "some todo", completed: true };
 
     // dbo.collection("Todos").insertOne(myobj, function(err, res) {
     //   if (err) throw err;
