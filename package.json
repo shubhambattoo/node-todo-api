@@ -4,8 +4,12 @@
   "description": "A api for todos",
   "main": "app.js",
   "scripts": {
+    "start": "node server/server.js",
     "text" : "mocha server/**/*.test.js",
     "test-watch" : "nodemon --exec 'npm test'"
+  },
+  "engines": {
+    "node" : "10.6.0"
   },
   "author": "Shubham",
   "license": "ISC",

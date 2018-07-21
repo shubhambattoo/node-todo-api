@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 
+const {ObjectId} = require('mongodb')
 const {
 	mongoose
 } = require("./db/mongoose");
@@ -15,8 +16,11 @@ const {
 
 const app = express();
 
+const port = process.env.PORT || 3000;
+
 app.use(bodyParser.json());
 
+// post a todo
 app.post("/todos", (req, res) => {
 	// console.log(req.body);
 
@@ -34,6 +38,7 @@ app.post("/todos", (req, res) => {
 	);
 });
 
+// get all todos
 app.get("/todos", (req, res) => {
 
 	Todo.find()
@@ -49,8 +54,29 @@ app.get("/todos", (req, res) => {
 
 })
 
-app.listen(3000);
-console.log("The app was started on 3000");
+// get single todo by id
+app.get("/todos/:id", (req, res) => {
+	const id = req.params.id;
+
+	if(!ObjectId.isValid(id)) {
+		return res.status(404).send();
+	}
+
+	Todo.findById(id)
+		.then((todo) => {
+
+			if(!todo) {
+				return res.status(404).send();
+			}
+
+			res.send({todo})
+		})
+		.catch(e => res.status(400).send())
+
+})
+
+app.listen(port);
+console.log("The app was started on " + port);
 
 module.exports = {
 	app
