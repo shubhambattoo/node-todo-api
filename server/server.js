@@ -9,6 +9,7 @@ const _ = require("lodash");
 
 // models
 const {User} = require("./models/users");
+const {authorization} = require("./middleware/authenticate")
 const {Todo} = require("./models/todos");
 
 const app = express();
@@ -138,6 +139,10 @@ app.post("/users", (req, res) => {
 		})
 		.catch(err => res.status(400).send(err));
 
+})
+
+app.get("/users/me", authorization , (req, res) => {
+	res.send(req.user)
 })
 
 
