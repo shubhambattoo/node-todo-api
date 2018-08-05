@@ -145,6 +145,25 @@ app.get("/users/me", authorization , (req, res) => {
 	res.send(req.user)
 })
 
+app.post("/users/login", (req, res) => {
+
+	const body = _.pick(req.body, ['email', 'password']);
+
+	User.findByCredentials(body.email, body.password)
+		.then((user) => {
+			// console.log(user)
+			// res.send(user)
+			user.generateAuthToken()
+				.then((token) => {
+					res.header('x-auth', token).send(user)
+				})
+		})
+		.catch((err) => {
+			res.status(400).send()
+		})
+
+})
+
 
 app.listen(port);
 console.log("The app was started on " + port);
