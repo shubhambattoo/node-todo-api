@@ -79,26 +79,42 @@ app.get("/todos/:id", authorization, (req, res) => {
 
 
 // delete todo
-app.delete("/todos/:id", authorization, (req, res) => {
+app.delete("/todos/:id", authorization, async (req, res) => {
 
 	const id = req.params.id;
 
 	if(!ObjectId.isValid(id)) {
 		return res.status(404).send();
 	}
+	
+	try {
+		const todo = await 	Todo.findOneAndRemove({
+			_id : id,
+			_creator : req.user._id
+		})	
+	
+		if(!todo) {
+			return res.status(404).send();
+		}
+	
+		res.send({todo})
+	} catch (error) {
+		res.status(400).send()
+	}
 
-	Todo.findOneAndRemove({
-		_id : id,
-		_creator : req.user._id
-	})	
-		.then((todo) => {
-			if(!todo) {
-				return res.status(404).send();
-			}
 
-			res.send({todo})
-		})
-		.catch(e => res.status(400).send())
+	// Todo.findOneAndRemove({
+	// 	_id : id,
+	// 	_creator : req.user._id
+	// })	
+	// 	.then((todo) => {
+	// 		if(!todo) {
+	// 			return res.status(404).send();
+	// 		}
+
+	// 		res.send({todo})
+	// 	})
+	// 	.catch(e => res.status(400).send())
 })
 
 // update todos
@@ -132,19 +148,29 @@ app.patch("/todos/:id", authorization, (req, res) => {
 
 
 // post user
-app.post("/users", (req, res) => {
+app.post("/users", async (req, res) => {
 
-	const body = _.pick(req.body, ['email','password']);
+	try {
+		const body = _.pick(req.body, ['email','password']);
+		const user = new User(body);
 
-	const user = new User(body)
+		await user.save();
+		const token = await user.generateAuthToken();
+		res.header('x-auth' , token).send(user);
+	} catch (error) {
+		res.status(400).send(err)
+	}
 
-	user.save()
-		.then((user) => {
-			return user.generateAuthToken();
-		}).then((token) => {
-			res.header('x-auth' , token).send(user)
-		})
-		.catch(err => res.status(400).send(err));
+
+	// 	const body = _.pick(req.body, ['email','password']);
+	// 	const user = new User(body);
+	// user.save()
+	// 	.then((user) => {
+	// 		return user.generateAuthToken();
+	// 	}).then((token) => {
+	// 		res.header('x-auth' , token).send(user)
+	// 	})
+	// 	.catch(err => res.status(400).send(err));
 
 })
 
@@ -152,29 +178,43 @@ app.get("/users/me", authorization , (req, res) => {
 	res.send(req.user)
 })
 
-app.post("/users/login", (req, res) => {
+app.post("/users/login", async (req, res) => {
 
-	const body = _.pick(req.body, ['email', 'password']);
+	try {
+		const body = _.pick(req.body, ['email', 'password']);
+		const user = await User.findByCredentials(body.email, body.password);
+		const token = await user.generateAuthToken();
+		res.header('x-auth', token).send(user)
+	} catch (error) {
+		res.status(400).send()
+	}
 
-	User.findByCredentials(body.email, body.password)
-		.then((user) => {
-			// console.log(user)
-			// res.send(user)
-			user.generateAuthToken()
-				.then((token) => {
-					res.header('x-auth', token).send(user)
-				})
-		})
-		.catch((err) => {
-			res.status(400).send()
-		})
+	// User.findByCredentials(body.email, body.password)
+	// 	.then((user) => {
+	// 		// console.log(user)
+	// 		// res.send(user)
+	// 		user.generateAuthToken()
+	// 			.then((token) => {
+	// 				res.header('x-auth', token).send(user)
+	// 			})
+	// 	})
+	// 	.catch((err) => {
+	// 		res.status(400).send()
+	// 	})
 
 })
 
-app.delete("/users/me/token", authorization, (req, res) => {
+app.delete("/users/me/token", authorization, async (req, res) => {
 
-	req.user.removeToken(req.token)
-		.then(() => res.status(200).send(), () => res.status(400).send())
+	try {
+		await req.user.removeToken(req.token)
+		res.status(200).send()
+	} catch (e) {
+		res.status(400).send()
+	}
+
+	// req.user.removeToken(req.token)
+	// 	.then(() => res.status(200).send(), () => res.status(400).send())
 
 })
 
