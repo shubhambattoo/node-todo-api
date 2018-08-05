@@ -19,11 +19,12 @@ const port = process.env.PORT;
 app.use(bodyParser.json());
 
 // post a todo
-app.post("/todos", (req, res) => {
+app.post("/todos", authorization, (req, res) => {
 	// console.log(req.body);
 
 	var todo = new Todo({
-		text: req.body.text
+		text: req.body.text,
+		_creator : req.user._id
 	});
 
 	todo.save().then(
@@ -37,9 +38,9 @@ app.post("/todos", (req, res) => {
 });
 
 // get all todos
-app.get("/todos", (req, res) => {
+app.get("/todos",authorization , (req, res) => {
 
-	Todo.find()
+	Todo.find({_creator : req.user._id})
 		.then((todos) => {
 			res.send({
 				todos,
@@ -53,14 +54,17 @@ app.get("/todos", (req, res) => {
 })
 
 // get single todo by id
-app.get("/todos/:id", (req, res) => {
+app.get("/todos/:id", authorization, (req, res) => {
 	const id = req.params.id;
 
 	if(!ObjectId.isValid(id)) {
 		return res.status(404).send();
 	}
 
-	Todo.findById(id)
+	Todo.findOne({
+		_id : id,
+		_creator : req.user._id
+	})
 		.then((todo) => {
 
 			if(!todo) {
@@ -75,7 +79,7 @@ app.get("/todos/:id", (req, res) => {
 
 
 // delete todo
-app.delete("/todos/:id", (req, res) => {
+app.delete("/todos/:id", authorization, (req, res) => {
 
 	const id = req.params.id;
 
@@ -83,7 +87,10 @@ app.delete("/todos/:id", (req, res) => {
 		return res.status(404).send();
 	}
 
-	Todo.findByIdAndRemove(id)	
+	Todo.findOneAndRemove({
+		_id : id,
+		_creator : req.user._id
+	})	
 		.then((todo) => {
 			if(!todo) {
 				return res.status(404).send();
@@ -95,7 +102,7 @@ app.delete("/todos/:id", (req, res) => {
 })
 
 // update todos
-app.patch("/todos/:id", (req, res) => {
+app.patch("/todos/:id", authorization, (req, res) => {
 	const id = req.params.id;
 	const body = _.pick(req.body, ["text", "completed"]);
 
@@ -110,7 +117,7 @@ app.patch("/todos/:id", (req, res) => {
 		body.completedAt = null;
 	}
 
-	Todo.findByIdAndUpdate(id, {$set : body}, {new : true})
+	Todo.findOneAndUpdate({_id : id, _creator : req.user._id}, {$set : body}, {new : true})
 		.then((todo) => {
 			
 			if(!todo) {
@@ -161,6 +168,13 @@ app.post("/users/login", (req, res) => {
 		.catch((err) => {
 			res.status(400).send()
 		})
+
+})
+
+app.delete("/users/me/token", authorization, (req, res) => {
+
+	req.user.removeToken(req.token)
+		.then(() => res.status(200).send(), () => res.status(400).send())
 
 })
 
